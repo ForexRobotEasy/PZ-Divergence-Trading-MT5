@@ -1,0 +1,89 @@
+mql5
+//+------------------------------------------------------------------+
+//|                       PZ Divergence Trading MT5                   |
+//|                     forexroboteasy.com                            |
+//|                   Forex Robot Easy Team                          |
+//+------------------------------------------------------------------+
+
+// Include the necessary libraries and classes
+#include <Trade\Trade.mqh>
+#include <Indicators\Indicators.mqh>
+
+// Declare the necessary variables and objects
+CTrade trade;                   // Trade object for executing trades
+CIndicator indicator;           // Indicator object for calculating divergences
+ENUM_INDICATOR oscillator;      // Preferred oscillator chosen by the trader
+
+//+------------------------------------------------------------------+
+//|                        Expert initialization function           |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    // Set the preferred oscillator
+    oscillator = INDICATOR_RSI;
+
+    // Check if the oscillator is valid
+    if (!indicator.IsValidOscillator(oscillator))
+    {
+        Print('Invalid oscillator chosen!');
+        return INIT_FAILED;
+    }
+
+    // Initialize the indicator with the chosen oscillator
+    if (!indicator.Initialize(oscillator))
+    {
+        Print('Failed to initialize the indicator!');
+        return INIT_FAILED;
+    }
+
+    // Set the necessary parameters for scanning divergences
+    indicator.SetDivergenceParameters(true, true);
+
+    // Set the necessary parameters for trading signals
+    indicator.SetSignalParameters(true, true);
+
+    return INIT_SUCCEEDED;
+}
+
+//+------------------------------------------------------------------+
+//|                     Expert start function                        |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Check for regular and hidden divergences
+    if (indicator.ScanDivergences())
+    {
+        // Get the entry and exit signals for trading positions
+        ENUM_SIGNAL entrySignal = indicator.GetEntrySignal();
+        ENUM_SIGNAL exitSignal = indicator.GetExitSignal();
+
+        // Execute the trade based on the signals
+        if (entrySignal == SIGNAL_BUY)
+        {
+            trade.Buy();
+        }
+        else if (entrySignal == SIGNAL_SELL)
+        {
+            trade.Sell();
+        }
+        else if (exitSignal == SIGNAL_CLOSE_BUY)
+        {
+            trade.CloseBuy();
+        }
+        else if (exitSignal == SIGNAL_CLOSE_SELL)
+        {
+            trade.CloseSell();
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//|                    Expert deinitialization function              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    // Clean up and release resources
+    indicator.Cleanup();
+}
+
+//+------------------------------------------------------------------+
